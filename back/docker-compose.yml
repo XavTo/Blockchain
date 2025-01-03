@@ -1,0 +1,13 @@
+services:
+  backend:
+    build: .
+    container_name: django_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    environment:
+      - DEBUG=True
+      - DJANGO_SUPERUSER_USERNAME=admin
+      - DJANGO_SUPERUSER_PASSWORD=admin
+      - DJANGO_SUPERUSER_EMAIL=admin@example.com
