@@ -14,7 +14,7 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/auth/login/`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/login/`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -24,15 +24,15 @@ export const authOptions: NextAuthOptions = {
             }),
           }
         );
-
+        console.log(res);
         if (!res.ok) {
           return null;
         }
 
         const user = await res.json();
-
+        console.log(user);
         // Vérifier que l'utilisateur contient les propriétés nécessaires
-        if (user && user.id && user.username && user.jwt) {
+        if (user && user.username && user.jwt) {
           return user;
         }
 

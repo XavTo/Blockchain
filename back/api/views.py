@@ -3,12 +3,18 @@
 from rest_framework import viewsets
 from .models import Asset, Trade
 from .serializers import AssetSerializer, TradeSerializer
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from django.contrib import auth
 from django.contrib.auth.models import User
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
+from .serializers import RegisterSerializer
+from rest_framework.permissions import AllowAny
+from rest_framework_simplejwt.tokens import AccessToken
+from django.contrib.auth import authenticate
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.permissions import IsAuthenticated
 
 class AssetViewSet(viewsets.ModelViewSet):
     queryset = Asset.objects.all()
@@ -33,25 +39,51 @@ def execute_trade(request):
 def logout(request):
     auth.logout(request)
     return Response(status=200)
-
 @api_view(['POST'])
-def login(request):
-    username = request.POST["username"]
-    password = request.POST["password"]
-    user = auth.authenticate(request, username=username, password=password)
-    if user is not None:
-        auth.login(request, user)
-        return Response(status=200)
-    else:
-        return Response(status=401)
 
-@api_view(['POST'])
+@permission_classes([AllowAny])
 def register(request):
-    username = request.POST["username"]
-    password = request.POST["password"]
-    user = User.objects.create_user(username=username, password=password)
-    if user is not None:
-        auth.login(request, user)
-        return Response(status=200)
-    else:
-        return Response(status=401)
+    serializer = RegisterSerializer(data=request.data)
+    if serializer.is_valid():
+        user = serializer.save()
+        # Génération du token JWT pour l'utilisateur inscrit
+        token = AccessToken.for_user(user)
+        return Response({
+            "message": "Inscription réussie.",
+            "token": str(token),
+        })
+    return Response(serializer.errors, status=400)
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def login(request):
+    username = request.data.get('username')
+    password = request.data.get('password')
+    user = authenticate(username=username, password=password)
+    if user:
+        # Génération du token JWT pour l'utilisateur authentifié
+        token = AccessToken.for_user(user)
+        return Response({
+            "username": username,
+            "jwt": str(token),
+        })
+    return Response({"error": "Identifiants invalides."}, status=401)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def dashboard_data(request):
+    # Vérification du token JWT via la classe d'authentification
+    auth = JWTAuthentication()
+    user, token = auth.authenticate(request)
+
+    if not user:
+        return Response({"error": "Unauthorized"}, status=401)
+
+    # Données simulées
+    data = {
+        "totalAssets": 120,
+        "assetsForSale": 45,
+        "assetsExchanged": 75,
+    }
+
+    return Response(data)

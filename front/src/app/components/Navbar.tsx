@@ -39,6 +39,19 @@ const Navbar = () => {
               </Link>
             </>
           )}
+          {session ? (
+            <div className="flex items-center space-x-4">
+              <span className="text-gray-800 dark:text-gray-200">
+                Bonjour {session.user.username}
+              </span>
+              <button
+                onClick={() => signOut()}
+                className="px-4 py-2 text-white bg-gradient-to-r dark:from-blue-700 dark:to-purple-700 rounded dark:hover:from-blue-800 dark:hover:to-purple-800 from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+              >
+                Se Déconnecter
+              </button>
+            </div>
+          ) : null}
           <button
             onClick={toggleTheme}
             className="ml-4 p-2 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 focus:outline-none"
@@ -46,19 +59,6 @@ const Navbar = () => {
           >
             {theme === "light" ? "🌙" : "☀️"}
           </button>
-          {session ? (
-            <div className="flex items-center space-x-4">
-              <span className="text-gray-800 dark:text-gray-200">
-                Bonjour, {session.user.username}
-              </span>
-              <button
-                onClick={() => signOut()}
-                className="px-4 py-2 text-white bg-red-600 rounded hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600"
-              >
-                Se Déconnecter
-              </button>
-            </div>
-          ) : null}
         </div>
       </div>
     </nav>

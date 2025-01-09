@@ -2,7 +2,7 @@
 
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import AssetViewSet, TradeViewSet, execute_trade, register, login, logout
+from .views import AssetViewSet, TradeViewSet, execute_trade, register, login, logout, dashboard_data
 
 router = DefaultRouter()
 router.register(r'assets', AssetViewSet)
@@ -14,4 +14,5 @@ urlpatterns = [
     path('register/', register, name="register"),
     path('login/', login, name="login"),
     path('logout/', logout, name="logout"),
+    path('dashboard/', dashboard_data, name="dashboard-data"),
 ]

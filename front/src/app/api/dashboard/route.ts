@@ -11,12 +11,32 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Simulez vos données ici
-  const data = {
-    totalAssets: 120,
-    assetsForSale: 45,
-    assetsExchanged: 75,
-  };
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/dashboard/`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token.jwt}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    if (!response.ok) {
+      return NextResponse.json(
+        { error: "Erreur lors de l'appel au backend." },
+        { status: response.status }
+      );
+    }
 
-  return NextResponse.json(data);
+    const data = await response.json();
+
+    return NextResponse.json(data); // Renvoyer les données du backend au frontend
+  } catch (error) {
+    console.error("Erreur lors de l'appel au backend:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
+  }
 }

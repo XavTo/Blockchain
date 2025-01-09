@@ -4,7 +4,7 @@
 
 import React, { useEffect, useState } from "react";
 import withAuth from "../hoc/withAuth";
-import { signOut, useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import axiosInstance from "../utils/axiosIntance";
 
 const DashboardContent = () => {
@@ -15,8 +15,21 @@ const DashboardContent = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const res = await axiosInstance.get("/api/dashboard");
-        setDashboardData(res.data);
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_URL}/api/dashboard/`,
+          {
+            method: "GET",
+          }
+        );
+        if (!res.ok) {
+          console.error(
+            "Erreur lors de la récupération des données du tableau de bord."
+          );
+          setLoading(false);
+          return;
+        }
+        const data = await res.json();
+        setDashboardData(data);
         setLoading(false);
       } catch (error) {
         console.error(
@@ -41,18 +54,11 @@ const DashboardContent = () => {
   }
 
   return (
-    // On limite la largeur du contenu du Dashboard, et on ajoute un peu de marge
     <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 max-w-4xl w-full mx-auto">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
           Tableau de Bord
         </h2>
-        <button
-          onClick={() => signOut()}
-          className="px-4 py-2 text-white bg-red-600 rounded hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600"
-        >
-          Se Déconnecter
-        </button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {dashboardData ? (
