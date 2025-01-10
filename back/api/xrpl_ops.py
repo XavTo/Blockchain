@@ -1,4 +1,8 @@
 import xrpl
+import requests
+import logging
+
+logger = logging.getLogger(__name__)
 
 testnet_url = "https://s.altnet.rippletest.net:51234/"
 
@@ -26,3 +30,15 @@ def mint_new_nft(wallet: xrpl.wallet.Wallet, uri: str):
     except xrpl.transaction.XRPLReliableSubmissionException as e:
         reply=f"Submit failed: {e}"
     return reply
+
+def list_nfts(wallet: xrpl.wallet.Wallet):
+    data = {}
+    data["method"] = "account_nfts"
+    params = {}
+    params["account"] = str(wallet.address)
+    params["ledger_index"] = "current"
+    params["queue"] = True
+    data["params"] = [params]
+    r = requests.post(testnet_url, json=data)
+
+    return r.json()

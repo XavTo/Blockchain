@@ -1,7 +1,7 @@
 # api/views.py
 
 from rest_framework import viewsets
-from .models import Asset, Trade
+from .models import Asset, Trade, Wallet
 from .serializers import AssetSerializer, TradeSerializer
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -15,6 +15,10 @@ from rest_framework_simplejwt.tokens import AccessToken
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
+from .xrpl_ops import create_new_wallet, mint_new_nft, list_nfts
+import xrpl
+import logging
+
 
 class AssetViewSet(viewsets.ModelViewSet):
     queryset = Asset.objects.all()
@@ -45,7 +49,13 @@ def logout(request):
 def register(request):
     serializer = RegisterSerializer(data=request.data)
     if serializer.is_valid():
-        user = serializer.save()
+        user = serializer.save()        
+        # Create wallet
+        wallet = create_new_wallet()
+        db_wallet = Wallet(address=wallet.address, public_key=wallet.public_key,
+                            private_key=wallet.private_key, user=user)
+        db_wallet.save()
+        
         # Génération du token JWT pour l'utilisateur inscrit
         token = AccessToken.for_user(user)
         return Response({
@@ -87,3 +97,38 @@ def dashboard_data(request):
     }
 
     return Response(data)
+
+def wallet_from_user(user: User) -> xrpl.wallet.Wallet:    
+    db_wallet = Wallet.objects.filter(user=user.id).first()
+    wallet = xrpl.wallet.Wallet(public_key=db_wallet.public_key,
+                                private_key=db_wallet.private_key,
+                                master_address=db_wallet.address)
+    return wallet
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_asset(request):
+    auth = JWTAuthentication()
+    user, token = auth.authenticate(request)
+    if not user:
+        return Response({"error": "Unauthorized"}, status=401)
+    
+    wallet = wallet_from_user(user)
+
+    uri = request.data.get("URI")
+    result = mint_new_nft(wallet, uri)
+
+    return Response(result)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def list_assets(request):
+    auth = JWTAuthentication()
+    user, token = auth.authenticate(request)
+    if not user:
+        return Response({"error": "Unauthorized"}, status=401)
+
+    wallet = wallet_from_user(user)
+
+    result = list_nfts(wallet)
+    return Response(status=200, data=result)

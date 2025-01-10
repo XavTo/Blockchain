@@ -1,6 +1,7 @@
 # api/models.py
 
 from django.db import models
+from django.contrib.auth.models import User
 
 class Asset(models.Model):
     name = models.CharField(max_length=100)
@@ -17,3 +18,9 @@ class Trade(models.Model):
 
     def __str__(self):
         return f"{self.quantity} x {self.asset.name}"
+
+class Wallet(models.Model):
+    address = models.CharField(max_length=100)
+    public_key = models.CharField(max_length=100)
+    private_key = models.CharField(max_length=100)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
