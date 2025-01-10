@@ -1,4 +1,4 @@
-// src/app/api/dashboard/route.ts
+// src/app/api/wallet/route.ts
 
 import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/dashboard/`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/wallet/`,
       {
         method: "GET",
         headers: {
@@ -22,18 +22,22 @@ export async function GET(req: NextRequest) {
         },
       }
     );
+
     if (!response.ok) {
       return NextResponse.json(
-        { error: "Erreur lors de l'appel au backend." },
+        { error: "Erreur lors de l'appel au backend pour le portefeuille." },
         { status: response.status }
       );
     }
 
     const data = await response.json();
 
-    return NextResponse.json(data); // Renvoyer les données du backend au frontend
+    return NextResponse.json(data);
   } catch (error) {
-    console.error("Erreur lors de l'appel au backend:", error);
+    console.error(
+      "Erreur lors de l'appel au backend pour le portefeuille:",
+      error
+    );
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }

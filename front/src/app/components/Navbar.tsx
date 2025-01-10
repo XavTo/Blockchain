@@ -26,12 +26,6 @@ const Navbar = () => {
                 Tableau de Bord
               </Link>
               <Link
-                href="/assets"
-                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition"
-              >
-                Pièces
-              </Link>
-              <Link
                 href="/trade"
                 className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition"
               >

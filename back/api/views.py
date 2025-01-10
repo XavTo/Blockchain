@@ -1,6 +1,6 @@
 # api/views.py
 
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from .models import Asset, Trade, Wallet
 from .serializers import AssetSerializer, TradeSerializer
 from rest_framework.decorators import api_view, permission_classes
@@ -43,8 +43,8 @@ def execute_trade(request):
 def logout(request):
     auth.logout(request)
     return Response(status=200)
-@api_view(['POST'])
 
+@api_view(['POST'])
 @permission_classes([AllowAny])
 def register(request):
     serializer = RegisterSerializer(data=request.data)
@@ -132,3 +132,20 @@ def list_assets(request):
 
     result = list_nfts(wallet)
     return Response(status=200, data=result)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_wallet_info(request):
+    """
+    Récupère les informations du portefeuille de l'utilisateur authentifié.
+    """
+    user = request.user
+    try:
+        db_wallet = Wallet.objects.get(user=user)
+        wallet_data = {
+            "address": db_wallet.address,
+            "public_key": db_wallet.public_key,
+        }
+        return Response(wallet_data, status=status.HTTP_200_OK)
+    except Wallet.DoesNotExist:
+        return Response({"error": "Portefeuille non trouvé."}, status=status.HTTP_404_NOT_FOUND)
