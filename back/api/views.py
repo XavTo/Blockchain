@@ -57,33 +57,45 @@ def logout(request):
 def register(request):
     serializer = RegisterSerializer(data=request.data)
     if serializer.is_valid():
-        user = serializer.save()        
-        # Create wallet
+        user = serializer.save()
+
+        # Créer le wallet
         wallet = create_new_wallet()
         db_wallet = Wallet(address=wallet.address, public_key=wallet.public_key,
-                            private_key=wallet.private_key, user=user)
+                           private_key=wallet.private_key, user=user)
         db_wallet.save()
-        
-        # Génération du token JWT pour l'utilisateur inscrit
+
         token = AccessToken.for_user(user)
         return Response({
-            "message": "Inscription réussie.",
-            "token": str(token),
-        })
+            "id": user.id,
+            "username": user.username,
+            "jwt": str(token),
+            "address": db_wallet.address,
+            "public_key": db_wallet.public_key,
+        }, status=201)
     return Response(serializer.errors, status=400)
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login(request):
-    username = request.data.get('username')
-    password = request.data.get('password')
+    username = request.data.get("username")
+    password = request.data.get("password")
     user = authenticate(username=username, password=password)
     if user:
-        # Génération du token JWT pour l'utilisateur authentifié
         token = AccessToken.for_user(user)
+
+        # Récupérer le wallet
+        try:
+            db_wallet = Wallet.objects.get(user=user)
+        except Wallet.DoesNotExist:
+            return Response({"error": "Aucun wallet associé à cet utilisateur."}, status=400)
+
         return Response({
+            "id": user.id,                            # Ajout de l'ID utilisateur
             "username": username,
             "jwt": str(token),
+            "address": db_wallet.address,             # Adresse XRPL
+            "public_key": db_wallet.public_key,       # Clé publique XRPL
         })
     return Response({"error": "Identifiants invalides."}, status=401)
 
@@ -184,7 +196,7 @@ def create_sell_offer_view(request):
 @permission_classes([IsAuthenticated])
 def list_sell_offers_for_user_view(request):
     """
-    Liste toutes les Sell Offers destinées à l'utilisateur.
+    Liste toutes les Sell Offers destinées à l'utilisateur (dans la DB).
     """
     auth = JWTAuthentication()
     user, token = auth.authenticate(request)
@@ -192,12 +204,17 @@ def list_sell_offers_for_user_view(request):
         return Response({"error": "Unauthorized"}, status=401)
 
     wallet = wallet_from_user(user)
-
     try:
-        xrpl_sell_offers = xrpl_list_sell_offers_for_user(wallet)
-        return Response({"sell_offers": xrpl_sell_offers}, status=200)
+        offers = SellOffer.objects.filter(
+            destination=wallet.address,
+            status='active'
+        ).select_related('seller')  # Pour optimiser l'accès aux infos du vendeur
+
+        serializer = SellOfferSerializer(offers, many=True)
+        return Response({"sell_offers": serializer.data}, status=200)
     except Exception as e:
         return Response({"error": str(e)}, status=500)
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -205,9 +222,18 @@ def list_all_sell_offers_view(request):
     """
     Liste toutes les Sell Offers disponibles sur le marketplace.
     """
+    auth = JWTAuthentication()
+    user, token = auth.authenticate(request)
     try:
         sell_offers = xrpl_list_all_sell_offers()
-        return Response({"sell_offers": sell_offers}, status=200)
+        
+        # Filtrer les offres dont la destination n'est pas nulle et qui ne sont pas liées à l'utilisateur
+        filtered_offers = [
+            offer for offer in sell_offers 
+            if offer.get('destination') is None or offer.get('seller') == user.id
+        ]
+        
+        return Response({"sell_offers": filtered_offers}, status=200)
     except Exception as e:
         return Response({"error": str(e)}, status=500)
 

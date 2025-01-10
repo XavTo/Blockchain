@@ -128,29 +128,59 @@ def cancel_sell_offer(wallet: xrpl.wallet.Wallet, offer_index: str) -> dict:
 
 def list_sell_offers_for_user(wallet: xrpl.wallet.Wallet) -> list:
     """
-    Liste toutes les Sell Offers destinées à l'utilisateur (avec destination = wallet.address).
+    Liste toutes les Sell Offers où le wallet spécifié est la destination.
     """
-    data = {
-        "method": "account_offers",
+    client = xrpl.clients.JsonRpcClient(testnet_url)
+
+    # Étape 1 : Récupérer tous les NFTs liés au wallet
+    account_nfts_request = {
+        "method": "account_nfts",
         "params": [
             {
-                "account": str(wallet.address),
+                "account": wallet.address,
                 "ledger_index": "current"
             }
         ]
     }
+    account_nfts_response = requests.post(testnet_url, json=account_nfts_request)
+    account_nfts_data = account_nfts_response.json()
 
-    response = requests.post(testnet_url, json=data)
-    xrpl_response = response.json()
+    if not account_nfts_data.get("result") or not account_nfts_data["result"].get("account_nfts"):
+        return []
 
-    # Récupérer toutes les Sell Offers où destination == wallet.address
+    # Étape 2 : Parcourir chaque NFT et récupérer les offres actives
+    nft_ids = [nft["NFTokenID"] for nft in account_nfts_data["result"]["account_nfts"]]
     sell_offers = []
-    if xrpl_response.get("result") and xrpl_response["result"].get("offers"):
-        for offer in xrpl_response["result"]["offers"]:
-            if offer.get("NFTokenID") and offer.get("Destination") == str(wallet.address):
-                sell_offers.append(offer)
+
+    for nft_id in nft_ids:
+        nft_sell_offers_request = {
+            "method": "nft_sell_offers",
+            "params": [
+                {
+                    "nft_id": nft_id
+                }
+            ]
+        }
+        try:
+            nft_sell_offers_response = requests.post(testnet_url, json=nft_sell_offers_request)
+            nft_sell_offers_data = nft_sell_offers_response.json()
+
+            if nft_sell_offers_data.get("result") and nft_sell_offers_data["result"].get("offers"):
+                # Filtrer les offres où la destination est le wallet
+                for offer in nft_sell_offers_data["result"]["offers"]:
+                    if offer.get("Destination") == wallet.address:
+                        sell_offers.append({
+                            "nftoken_id": nft_id,
+                            "offer_index": offer["index"],
+                            "amount": offer["amount"],
+                            "seller": offer["owner"],
+                            "destination": offer["Destination"]
+                        })
+        except Exception as e:
+            logger.error(f"Erreur lors de la récupération des offres pour NFT {nft_id}: {e}")
 
     return sell_offers
+
 
 def list_all_sell_offers() -> list:
     """

@@ -43,10 +43,19 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user }) {
+      // `user` est l'objet renvoyé par le backend (/api/login/ ou /api/register/)
       if (user) {
         token.id = typeof user.id === "string" ? parseInt(user.id) : user.id;
         token.username = user.username;
-        token.jwt = user.jwt; // Ajout du JWT
+        token.jwt = user.jwt;
+
+        // Ajouter les nouveaux champs
+        if (user.address) {
+          token.address = user.address;
+        }
+        if (user.public_key) {
+          token.public_key = user.public_key;
+        }
       }
       return token;
     },
@@ -56,6 +65,10 @@ export const authOptions: NextAuthOptions = {
           id: token.id as number,
           username: token.username as string,
           jwt: token.jwt as string,
+
+          // Ajouter dans la session
+          address: token.address as string,
+          public_key: token.public_key as string,
         };
       }
       return session;

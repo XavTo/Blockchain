@@ -27,7 +27,8 @@ const Marketplace = () => {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string>("");
 
-  const currentUserName = session?.user?.username;
+  const currentUserName = session?.user?.username || "";
+  const currentUserAddress = session?.user?.address || "";
 
   const fetchSellOffers = async () => {
     setLoading(true);
@@ -110,7 +111,7 @@ const Marketplace = () => {
   };
 
   const formatDrops = (drops: string) => {
-    const xrp = parseInt(drops) / 1_000_000;
+    const xrp = parseInt(drops, 10) / 1_000_000;
     return `${xrp} XRP`;
   };
 
@@ -122,6 +123,20 @@ const Marketplace = () => {
     const end = text.slice(-Math.floor(maxLength / 2));
     return `${start}...${end}`;
   };
+
+  // Filtre A : Mes Offres (Vendeur OU Destination)
+  const myActiveOffers = sellOffers.filter((offer) => {
+    const isMeSeller = offer.seller_username === currentUserName;
+    const isMeDestination = offer.destination === currentUserAddress;
+    return (isMeSeller || isMeDestination) && offer.status === "active";
+  });
+
+  // Filtre B : Toutes les Offres Sauf les Miennes
+  const otherActiveOffers = sellOffers.filter((offer) => {
+    const isMeSeller = offer.seller_username === currentUserName;
+    const isMeDestination = offer.destination === currentUserAddress;
+    return !isMeSeller && !isMeDestination && offer.status === "active";
+  });
 
   return (
     <div className="relative flex flex-col items-center justify-center w-full h-full">
@@ -135,115 +150,94 @@ const Marketplace = () => {
 
         {message && <p className="text-green-500 mb-3">{message}</p>}
 
-        {/* Section des offres de l'utilisateur */}
+        {/* Mes Offres de Vente */}
         <div className="mb-8">
           <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">
             Mes Offres de Vente
           </h2>
           {error ? (
             <p className="text-red-500">{error}</p>
+          ) : myActiveOffers.length === 0 ? (
+            <p className="text-gray-700 dark:text-gray-300">
+              Aucune offre de vente active.
+            </p>
           ) : (
-            <>
-              {sellOffers.filter(
-                (offer) =>
-                  offer.seller_username === currentUserName &&
-                  offer.status === "active"
-              ).length === 0 ? (
-                <p className="text-gray-700 dark:text-gray-300">
-                  Aucune offre de vente active.
-                </p>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                  {sellOffers
-                    .filter(
-                      (offer) =>
-                        offer.seller_username === currentUserName &&
-                        offer.status === "active"
-                    )
-                    .map((offer) => (
-                      <div
-                        key={offer.id}
-                        className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow"
-                      >
-                        <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                          {truncateText(offer.nftoken_id, 20)}
-                        </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+              {myActiveOffers.map((offer) => (
+                <div
+                  key={offer.id}
+                  className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow"
+                >
+                  <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                    {truncateText(offer.nftoken_id, 20)}
+                  </h3>
 
-                        <p className="text-gray-600 dark:text-gray-400 mb-2">
-                          Prix : {formatDrops(offer.amount)}
-                        </p>
-                        {offer.destination && (
-                          <p className="text-gray-600 dark:text-gray-400 mb-2">
-                            Destination : {offer.destination}
-                          </p>
-                        )}
-                        <button
-                          onClick={() => handleCancelOffer(offer.offer_index)}
-                          className="mt-2 w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors"
-                        >
-                          Annuler l'Offre
-                        </button>
-                      </div>
-                    ))}
+                  <p className="text-gray-600 dark:text-gray-400 mb-2">
+                    Prix : {formatDrops(offer.amount)}
+                  </p>
+                  {offer.destination && (
+                    <p className="text-gray-600 dark:text-gray-400 mb-2">
+                      Destination : {offer.destination}
+                    </p>
+                  )}
+                  <button
+                    onClick={() => handleCancelOffer(offer.offer_index)}
+                    className="mt-2 w-full bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors"
+                  >
+                    Annuler l'Offre
+                  </button>
                 </div>
-              )}
-            </>
+              ))}
+            </div>
           )}
         </div>
 
-        {/* Section des toutes les offres */}
+        {/* Toutes les Offres de Vente */}
         <div>
           <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">
             Toutes les Offres de Vente
           </h2>
           {error ? (
             <p className="text-red-500">{error}</p>
+          ) : otherActiveOffers.length === 0 ? (
+            <p className="text-gray-700 dark:text-gray-300">
+              Aucune offre disponible.
+            </p>
           ) : (
-            <>
-              {sellOffers.filter((offer) => offer.status === "active")
-                .length === 0 ? (
-                <p className="text-gray-700 dark:text-gray-300">
-                  Aucune offre disponible.
-                </p>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                  {sellOffers
-                    .filter((offer) => offer.status === "active")
-                    .map((offer) => (
-                      <div
-                        key={offer.id}
-                        className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow"
-                      >
-                        <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                          {truncateText(offer.nftoken_id, 20)}
-                        </h3>
-                        <p className="text-gray-600 dark:text-gray-400 mb-2">
-                          Vendeur : {offer.seller_username}
-                        </p>
-                        <p className="text-gray-600 dark:text-gray-400 mb-2">
-                          Prix : {formatDrops(offer.amount)}
-                        </p>
-                        {offer.destination && (
-                          <p className="text-gray-600 dark:text-gray-400 mb-2">
-                            Destination : {offer.destination}
-                          </p>
-                        )}
-                        <button
-                          onClick={() => handleAcceptOffer(offer.offer_index)}
-                          disabled={offer.seller_username === currentUserName}
-                          className={`mt-2 w-full ${
-                            offer.seller_username === currentUserName
-                              ? "bg-gray-400 cursor-not-allowed"
-                              : "bg-blue-600 hover:bg-blue-700"
-                          } text-white px-4 py-2 rounded transition-colors`}
-                        >
-                          Accepter l'Offre
-                        </button>
-                      </div>
-                    ))}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+              {otherActiveOffers.map((offer) => (
+                <div
+                  key={offer.id}
+                  className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow"
+                >
+                  <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                    {truncateText(offer.nftoken_id, 20)}
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-2">
+                    Vendeur : {offer.seller_username}
+                  </p>
+                  <p className="text-gray-600 dark:text-gray-400 mb-2">
+                    Prix : {formatDrops(offer.amount)}
+                  </p>
+                  {offer.destination && (
+                    <p className="text-gray-600 dark:text-gray-400 mb-2">
+                      Destination : {offer.destination}
+                    </p>
+                  )}
+                  <button
+                    onClick={() => handleAcceptOffer(offer.offer_index)}
+                    disabled={offer.seller_username === currentUserName}
+                    className={`mt-2 w-full ${
+                      offer.seller_username === currentUserName
+                        ? "bg-gray-400 cursor-not-allowed"
+                        : "bg-blue-600 hover:bg-blue-700"
+                    } text-white px-4 py-2 rounded transition-colors`}
+                  >
+                    Accepter l'Offre
+                  </button>
                 </div>
-              )}
-            </>
+              ))}
+            </div>
           )}
         </div>
       </div>
