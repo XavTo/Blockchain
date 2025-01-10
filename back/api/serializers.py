@@ -1,7 +1,7 @@
 # api/serializers.py
 
 from rest_framework import serializers
-from .models import Asset, Trade
+from .models import Asset, Trade, SellOffer
 from django.contrib.auth.models import User
 
 
@@ -30,3 +30,10 @@ class RegisterSerializer(serializers.ModelSerializer):
             password=validated_data['password']
         )
         return user
+
+class SellOfferSerializer(serializers.ModelSerializer):
+    seller_username = serializers.CharField(source='seller.username', read_only=True)
+
+    class Meta:
+        model = SellOffer
+        fields = ['id', 'nftoken_id', 'seller', 'seller_username', 'amount', 'destination', 'offer_index', 'created_at', 'status']

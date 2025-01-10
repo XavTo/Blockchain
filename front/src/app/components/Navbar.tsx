@@ -31,13 +31,22 @@ const Navbar = () => {
               >
                 Échanger
               </Link>
+              <Link
+                href="/marketplace"
+                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition"
+              >
+                Marketplace
+              </Link>
+              <Link
+                href="/my_sell_offers"
+                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition"
+              >
+                Mes propositions
+              </Link>
             </>
           )}
           {session ? (
             <div className="flex items-center space-x-4">
-              <span className="text-gray-800 dark:text-gray-200">
-                Bonjour {session.user.username}
-              </span>
               <button
                 onClick={() => signOut()}
                 className="px-4 py-2 text-white bg-gradient-to-r dark:from-blue-700 dark:to-purple-700 rounded dark:hover:from-blue-800 dark:hover:to-purple-800 from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"

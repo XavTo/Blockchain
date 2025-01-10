@@ -24,13 +24,11 @@ export const authOptions: NextAuthOptions = {
             }),
           }
         );
-        console.log(res);
         if (!res.ok) {
           return null;
         }
 
         const user = await res.json();
-        console.log(user);
         // Vérifier que l'utilisateur contient les propriétés nécessaires
         if (user && user.username && user.jwt) {
           return user;
@@ -54,9 +52,11 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (token) {
-        session.user.id = token.id as number;
-        session.user.username = token.username as string;
-        session.user.jwt = token.jwt as string;
+        session.user = {
+          id: token.id as number,
+          username: token.username as string,
+          jwt: token.jwt as string,
+        };
       }
       return session;
     },

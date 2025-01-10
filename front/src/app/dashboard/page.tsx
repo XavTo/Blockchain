@@ -7,6 +7,7 @@ import withAuth from "../hoc/withAuth";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import CreateAssetModal from "../components/CreateAssetModal";
+import Loader from "../components/Loader"; // Import du Loader
 
 interface WalletInfo {
   address: string;
@@ -147,19 +148,10 @@ const DashboardContent = () => {
     reloadAssets();
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center px-4 py-8 bg-gray-100 dark:bg-gray-900">
-        <p className="text-gray-700 dark:text-gray-300">
-          Chargement du tableau de bord...
-        </p>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex flex-col items-center justify-center px-4 py-8 bg-gray-100 dark:bg-gray-900 flex-grow">
-      <div className="w-full max-w-6xl bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+    <div className="relative flex flex-col items-center justify-center w-full h-full">
+      {loading && <Loader />} {/* Afficher le Loader si loading */}
+      <div className="max-w-6xl w-full px-4">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200">
             Tableau de Bord
@@ -241,7 +233,6 @@ const DashboardContent = () => {
           )}
         </div>
       </div>
-
       <CreateAssetModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

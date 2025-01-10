@@ -1,6 +1,9 @@
+// src/app/components/CreateAssetModal.tsx
+
 "use client";
 
 import React, { useState } from "react";
+import Loader from "./Loader"; // Import du Loader
 
 interface CreateAssetModalProps {
   isOpen: boolean;
@@ -71,7 +74,12 @@ const CreateAssetModal: React.FC<CreateAssetModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-md">
+      {loading && <Loader />} {/* Afficher le Loader pendant la création */}
+      <div
+        className={`bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-md ${
+          loading ? "opacity-50 pointer-events-none" : ""
+        }`}
+      >
         <h2 className="text-2xl font-semibold mb-4">
           Créer un nouvel Asset (NFT)
         </h2>
@@ -141,6 +149,7 @@ const CreateAssetModal: React.FC<CreateAssetModalProps> = ({
               type="button"
               onClick={onClose}
               className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-400 dark:hover:bg-gray-500"
+              disabled={loading}
             >
               Annuler
             </button>

@@ -7,3 +7,6 @@ requests==2.32.3
 xrpl-py==4.0.0
 djangorestframework-simplejwt
 django-cors-headers==4.6.0
+psycopg2-binary
+dj-database-url
+python-decouple==3.8

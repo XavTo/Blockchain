@@ -1,10 +1,9 @@
-// src/app/api/create_asset/route.ts
+// src/app/api/create_sell_offer/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 
 export async function POST(req: NextRequest) {
-  // On récupère le token stocké par NextAuth
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
   if (!token) {
@@ -12,34 +11,30 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Récupération des données envoyées par le frontend
     const body = await req.json();
-    const { URI } = body;
+    const { nft_id, amount, destination } = body;
 
-    // On appelle ensuite notre backend Django
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/asset/`, // NOTEZ LE SLASH FINAL
+      `${process.env.NEXT_PUBLIC_API_URL}/api/create_sell_offer/`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token.jwt}`, // Transmission du JWT
+          Authorization: `Bearer ${token.jwt}`,
         },
-        body: JSON.stringify({ URI }),
+        body: JSON.stringify({ nft_id, amount, destination }),
       }
     );
 
-    // Si la réponse n’est pas OK, on renvoie l’erreur
     if (!response.ok) {
       const errorData = await response.json();
       return NextResponse.json(errorData, { status: response.status });
     }
 
-    // En cas de succès, on renvoie la réponse du backend
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error("Erreur lors de la création d'asset :", error);
+    console.error("Erreur lors de la création de l'offre de vente:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }

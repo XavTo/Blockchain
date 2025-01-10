@@ -24,3 +24,15 @@ class Wallet(models.Model):
     public_key = models.CharField(max_length=100)
     private_key = models.CharField(max_length=100)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+class SellOffer(models.Model):
+    nftoken_id = models.CharField(max_length=64, unique=True)
+    seller = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sell_offers')
+    amount = models.CharField(max_length=20)
+    destination = models.CharField(max_length=35, null=True, blank=True)
+    offer_index = models.CharField(max_length=64, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, default='active')
+
+    def __str__(self):
+        return f"SellOffer {self.nftoken_id} by {self.seller.username}"

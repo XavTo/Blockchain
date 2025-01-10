@@ -1,8 +1,7 @@
-// src/app/api/list_assets/route.ts
+// src/app/api/sell_offers_for_me/route.ts
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { NextRequest } from "next/server";
 
 export async function GET(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
@@ -13,7 +12,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/list/`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/sell_offers_for_me/`,
       {
         method: "GET",
         headers: {
@@ -22,18 +21,19 @@ export async function GET(req: NextRequest) {
         },
       }
     );
+
     if (!response.ok) {
-      return NextResponse.json(
-        { error: "Erreur lors de l'appel au backend pour les actifs." },
-        { status: response.status }
-      );
+      const errorData = await response.json();
+      return NextResponse.json(errorData, { status: response.status });
     }
 
     const data = await response.json();
-    console.log(data);
     return NextResponse.json(data);
   } catch (error) {
-    console.error("Erreur lors de l'appel au backend pour les actifs:", error);
+    console.error(
+      "Erreur lors de la récupération des sell offers pour l'utilisateur:",
+      error
+    );
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }
