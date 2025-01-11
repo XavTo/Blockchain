@@ -329,7 +329,7 @@ def cancel_sell_offer_view(request):
 
     # Vérifier que l'offre appartient à l'utilisateur et est active
     try:
-        sell_offer = SellOffer.objects.get(offer_index=offer_index, seller=user, status='active')
+        sell_offer = SellOffer.objects.get(offer_index=offer_index, status='active')
     except SellOffer.DoesNotExist:
         return Response({"error": "Sell offer not found or already processed."}, status=404)
 

@@ -9,7 +9,9 @@ import { SellOffer } from "@/types/SellOffer";
 const MySellOffers = () => {
   const { data: session } = useSession();
   const [sellOffers, setSellOffers] = useState<SellOffer[]>([]);
-  const [images, setImages] = useState<{ [key: string]: string }>({});
+  const [images, setImages] = useState<{
+    [key: string]: { uri: string; name: string; description: string };
+  }>({});
   const [loading, setLoading] = useState<boolean>(true);
   const [loadingOffers, setLoadingOffers] = useState<{
     [key: string]: boolean;
@@ -49,8 +51,8 @@ const MySellOffers = () => {
       );
       const sellers = data.sell_offers.map((offer: SellOffer) => offer.seller);
 
-      // Fetch NFT images
-      await fetchNFTImages(nftokenIds, sellers);
+      // Fetch NFT images, names, and descriptions
+      await fetchNFTDetails(nftokenIds, sellers);
     } catch (err) {
       console.error("Erreur lors de la récupération de vos offres:", err);
       setError("Erreur lors de la récupération de vos offres.");
@@ -59,8 +61,8 @@ const MySellOffers = () => {
     }
   };
 
-  // Function to fetch NFT images
-  const fetchNFTImages = async (nftokenIds: string[], sellers: number[]) => {
+  // Function to fetch NFT details (images, names, descriptions)
+  const fetchNFTDetails = async (nftokenIds: string[], sellers: number[]) => {
     try {
       const res = await fetch("/api/get_nfts/", {
         method: "POST",
@@ -75,16 +77,25 @@ const MySellOffers = () => {
         return;
       }
 
-      // Update images state
-      const nftImages = data.nfts.reduce(
-        (acc: { [key: string]: string }, nft: any) => {
-          acc[nft.id] = nft.URI;
+      // Update images state with URI, name, and description
+      const nftDetails = data.nfts.reduce(
+        (
+          acc: {
+            [key: string]: { uri: string; name: string; description: string };
+          },
+          nft: any
+        ) => {
+          acc[nft.id] = {
+            uri: nft.URI,
+            name: nft.name,
+            description: nft.description,
+          };
           return acc;
         },
         {}
       );
 
-      setImages(nftImages);
+      setImages(nftDetails);
     } catch (err) {
       console.error("Erreur lors de la récupération des images:", err);
       setError("Erreur lors de la récupération des images.");
@@ -181,62 +192,69 @@ const MySellOffers = () => {
   };
 
   return (
-    <div className="relative flex flex-col items-center w-full flex-1 bg-gray-100 dark:bg-gray-900 pt-20 pb-16">
-      {loading && <Loader />}
+    <div className="relative flex flex-col items-center w-full flex-1 bg-gray-100 dark:bg-gray-900 min-h-screen">
+      {loading && <Loader />} {/* Display Loader if loading */}
       <div className="max-w-6xl w-full px-4 py-8 mx-auto">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-200">
-            Mes Propositions d'achat
+          <h1 className="text-4xl font-extrabold text-gray-800 dark:text-gray-200">
+            Mes Offres de Vente
           </h1>
         </div>
 
         {message && <p className="text-green-500 mb-3">{message}</p>}
+        {error && <p className="text-red-500 mb-3">{error}</p>}
 
-        <div className="mb-8">
-          <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">
-            Mes Offres de Vente
-          </h2>
-
-          {error ? (
-            <p className="text-red-500">{error}</p>
-          ) : sellOffers.length === 0 ? (
+        {/* Mes Offres de Vente */}
+        <div className="mb-12">
+          {sellOffers.length === 0 ? (
             <p className="text-gray-700 dark:text-gray-300">
               Aucune offre active.
             </p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {sellOffers.map((offer) => (
                 <div
                   key={offer.id}
-                  className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow hover:shadow-lg transition-shadow"
+                  className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl hover:shadow-2xl transition-shadow duration-300"
                 >
                   {/* Display NFT Image */}
-                  {images[offer.nftoken_id] ? (
+                  {images[offer.nftoken_id]?.uri ? (
                     <img
-                      src={images[offer.nftoken_id]}
+                      src={images[offer.nftoken_id].uri}
                       alt={`NFT ${offer.nftoken_id}`}
-                      className="w-full h-48 object-cover rounded-md mb-4"
+                      className="w-full h-64 object-cover rounded-md mb-4"
                     />
                   ) : (
-                    <div className="w-full h-48 bg-gray-200 dark:bg-gray-700 rounded-md mb-4 flex items-center justify-center">
+                    <div className="w-full h-64 bg-gray-200 dark:bg-gray-700 rounded-md mb-4 flex items-center justify-center">
                       <span className="text-gray-500 dark:text-gray-400">
                         Image non disponible
                       </span>
                     </div>
                   )}
 
-                  <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                    {truncateText(offer.nftoken_id, 20)}
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-2">
+                  {/* NFT Name */}
+                  {images[offer.nftoken_id]?.name && (
+                    <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-2">
+                      {truncateText(images[offer.nftoken_id].name, 30)}
+                    </h3>
+                  )}
+
+                  {/* NFT Description */}
+                  {images[offer.nftoken_id]?.description && (
+                    <p className="text-gray-600 dark:text-gray-400 mb-4">
+                      {truncateText(images[offer.nftoken_id].description, 100)}
+                    </p>
+                  )}
+
+                  <p className="text-lg text-gray-700 dark:text-gray-300 mb-2">
                     Prix : {formatDrops(offer.amount)}
                   </p>
                   {offer.destination && (
-                    <p className="text-gray-600 dark:text-gray-400 mb-2">
-                      Destination : {offer.destination}
+                    <p className="text-lg text-gray-700 dark:text-gray-300 mb-4">
+                      Destination : {truncateText(offer.destination, 20)}
                     </p>
                   )}
-                  <div className="flex space-x-2 mt-4">
+                  <div className="flex space-x-4">
                     <button
                       onClick={() => handleAcceptOffer(offer.offer_index)}
                       disabled={
@@ -280,10 +298,6 @@ const MySellOffers = () => {
             </div>
           )}
         </div>
-
-        {message && (
-          <p className="mt-4 text-green-600 dark:text-green-400">{message}</p>
-        )}
       </div>
     </div>
   );
