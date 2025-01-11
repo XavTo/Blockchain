@@ -24,8 +24,9 @@ from .xrpl_ops import (
     list_sell_offers_for_user as xrpl_list_sell_offers_for_user,
     list_all_sell_offers as xrpl_list_all_sell_offers
 )
-from .xrpl_ops import wallet_from_user
+from .xrpl_ops import wallet_from_user, parseXrplNfts
 import logging
+from typing import List
 
 
 class AssetViewSet(viewsets.ModelViewSet):
@@ -150,6 +151,57 @@ def get_wallet_info(request):
         return Response(wallet_data, status=status.HTTP_200_OK)
     except Wallet.DoesNotExist:
         return Response({"error": "Portefeuille non trouvé."}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def get_nfts(request):
+    """
+    Récupère les détails des NFTs pour une liste de nftoken_ids
+    provenant de plusieurs 'sellers'.
+    """
+    auth = JWTAuthentication()
+    user, token = auth.authenticate(request)
+    if not user:
+        return Response({"error": "Unauthorized"}, status=401)
+
+    # Extract data from the request body
+    nftoken_ids = request.data.get('nftoken_ids', [])
+    sellers = request.data.get('sellers', [])
+
+    # Basic validations
+    if not isinstance(nftoken_ids, list) or len(nftoken_ids) == 0:
+        return Response({"error": "nftoken_ids doit être une liste non vide."}, status=400)
+    if not isinstance(sellers, list):
+        return Response({"error": "sellers doit être une liste de IDs de user."}, status=400)
+
+    nftoken_ids_upper = [nid.upper() for nid in nftoken_ids]
+
+    all_matched_nfts = []
+
+    try:
+        for seller_id in sellers:
+            try:
+                seller_user = User.objects.get(id=seller_id)
+            except User.DoesNotExist:
+                continue
+            wallets = Wallet.objects.filter(user=seller_user)
+            if not wallets.exists():
+                continue
+
+            for wallet in wallets:
+                xrpl_data = list_nfts(wallet)
+                parsed_nfts = parseXrplNfts(xrpl_data)
+                for nft in parsed_nfts:
+                    if nft['id'].upper() in nftoken_ids_upper:
+                        all_matched_nfts.append(nft)
+
+        # Return all found NFTs
+        return Response({"nfts": all_matched_nfts}, status=200)
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=500)
+
     
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -240,16 +292,12 @@ def list_all_sell_offers_view(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def accept_sell_offer_view(request):
-    """
-    Accepte une Sell Offer.
-    """
     auth = JWTAuthentication()
     user, token = auth.authenticate(request)
     if not user:
         return Response({"error": "Unauthorized"}, status=401)
 
     offer_index = request.data.get("offer_index")
-
     if not offer_index:
         return Response({"error": "Missing parameter: offer_index"}, status=400)
 
@@ -257,15 +305,8 @@ def accept_sell_offer_view(request):
 
     try:
         xrpl_result = xrpl_accept_sell_offer(wallet, offer_index)
-
-        # Mettre à jour le statut de l'offre dans la base de données
-        try:
-            sell_offer = SellOffer.objects.get(offer_index=offer_index, status='active')
-            sell_offer.status = 'accepted'
-            sell_offer.save()
-        except SellOffer.DoesNotExist:
-            pass  # Optionnel : gérer le cas où l'offre n'est pas trouvée
-
+        sell_offer = SellOffer.objects.get(offer_index=offer_index, status='active')
+        sell_offer.delete()
         return Response({"message": "Sell offer acceptée avec succès.", "result": xrpl_result}, status=200)
     except Exception as e:
         return Response({"error": str(e)}, status=500)

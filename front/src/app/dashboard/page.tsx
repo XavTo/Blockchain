@@ -156,12 +156,6 @@ const DashboardContent = () => {
           <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200">
             Tableau de Bord
           </h2>
-          <Link
-            href="/"
-            className="text-blue-600 dark:text-blue-400 hover:underline"
-          >
-            Retour à l'accueil
-          </Link>
         </div>
 
         {/* Bouton pour ouvrir la modal */}

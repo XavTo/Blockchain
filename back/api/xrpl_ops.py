@@ -3,6 +3,9 @@ import requests
 import logging
 from .serializers import SellOfferSerializer
 from .models import SellOffer, User, Wallet
+import json
+from xrpl.models.transactions import NFTokenAcceptOffer
+from xrpl.transaction import submit_and_wait
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +48,38 @@ def list_nfts(wallet: xrpl.wallet.Wallet):
 
     return r.json()
 
+def parseXrplNfts(xrplData: any) -> list:
+    account_nfts = xrplData.get("result", {}).get("account_nfts", [])
+
+    parsed_nfts = []
+    for nft in account_nfts:
+        # Ensure consistent casing
+        nftId = nft.get("NFTokenID", "").upper()
+        hexUri = nft.get("URI", "")
+        decodedUri = bytes.fromhex(hexUri).decode('utf-8', errors='replace')
+
+        name = "NFT sans nom"
+        description = ""
+        imageUrl = ""
+        try:
+            jsonUri = json.loads(decodedUri)
+            name = jsonUri.get("name", name)
+            description = jsonUri.get("description", "")
+            imageUrl = jsonUri.get("image", "")
+        except json.JSONDecodeError:
+            # If not JSON, fallback to using the raw decoded URI as the "name"
+            name = decodedUri or name
+
+        parsed_nfts.append({
+            "id": nftId,
+            "name": name,
+            "description": description,
+            "URI": imageUrl,
+        })
+
+    return parsed_nfts
+
+
 def create_sell_offer(wallet: xrpl.wallet.Wallet, nftoken_id: str, amount: str, destination: str = None) -> dict:
     """
     Crée une Sell Offer sur XRPL.
@@ -84,25 +119,32 @@ def create_sell_offer(wallet: xrpl.wallet.Wallet, nftoken_id: str, amount: str, 
 
 def accept_sell_offer(wallet: xrpl.wallet.Wallet, offer_index: str) -> dict:
     """
-    Accepte une Sell Offer sur XRPL.
+    Accepte une offre de vente NFT sur XRPL.
     """
-    client = xrpl.clients.JsonRpcClient(testnet_url)
-
-    accept_offer_tx = xrpl.models.transactions.NFTokenAcceptOffer(
-        account=wallet.address,
-        nftoken_offers=[offer_index]
-    )
-
     try:
-        response = xrpl.transaction.submit_and_wait(accept_offer_tx, client, wallet)
-        if response.is_successful():
-            return {
-                "transaction_hash": response.result.get("hash")
-            }
-        else:
-            raise Exception(response.result.get("engine_result_message", "Erreur inconnue lors de l'acceptation de l'offre."))
-    except xrpl.transaction.XRPLReliableSubmissionException as e:
-        raise Exception(f"AcceptSellOffer failed: {e}")
+        client = xrpl.clients.JsonRpcClient(testnet_url)
+        
+        # Construction de la transaction NFTokenAcceptOffer
+        accept_offer_txn = xrpl.models.transactions.NFTokenAcceptOffer(
+            account=wallet.classic_address,
+            nftoken_sell_offer=offer_index,  # Remplacement par le champ correct
+        )
+
+        # Soumission et attente du résultat
+        response = xrpl.transaction.submit_and_wait(
+            accept_offer_txn,
+            client,
+            wallet,
+        )
+        
+        # Vérification du succès
+        if not response.is_successful():
+            raise Exception(f"Transaction échouée : {response.result.get('engine_result_message', 'Erreur inconnue')}")
+        
+        return response.result
+
+    except Exception as e:
+        raise Exception(f"Erreur lors de l'acceptation de l'offre : {str(e)}")
 
 def cancel_sell_offer(wallet: xrpl.wallet.Wallet, offer_index: str) -> dict:
     """

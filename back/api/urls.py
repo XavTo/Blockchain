@@ -2,7 +2,7 @@
 
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import AssetViewSet, TradeViewSet, execute_trade, register, login, logout, create_asset, list_assets, get_wallet_info, create_sell_offer_view, list_sell_offers_for_user_view, list_all_sell_offers_view, accept_sell_offer_view, cancel_sell_offer_view
+from .views import AssetViewSet, TradeViewSet, execute_trade, register, login, logout, create_asset, list_assets, get_wallet_info, create_sell_offer_view, list_sell_offers_for_user_view, list_all_sell_offers_view, accept_sell_offer_view, cancel_sell_offer_view, get_nfts
 router = DefaultRouter()
 router.register(r'assets', AssetViewSet)
 router.register(r'trades', TradeViewSet)
@@ -16,7 +16,7 @@ urlpatterns = [
     path('asset/', create_asset, name="create-asset"),
     path('list/', list_assets, name="list-assets"),
     path('wallet/', get_wallet_info, name='get_wallet_info'),
-
+    path('get_nfts/', get_nfts, name='get_nfts'),
     path('create_sell_offer/', create_sell_offer_view, name='create-sell-offer'),
     path('sell_offers_for_me/', list_sell_offers_for_user_view, name='sell-offers-for-me'),
     path('all_sell_offers/', list_all_sell_offers_view, name='all-sell-offers'),

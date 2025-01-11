@@ -7,23 +7,12 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import withAuth from "../hoc/withAuth";
 import Loader from "../components/Loader"; // Import du Loader
+import { SellOffer } from "@/types/SellOffer";
 
 interface Nft {
   NFTokenID: string;
   URI: string; // hex
   [key: string]: any; // autres champs
-}
-
-interface SellOffer {
-  id: number;
-  nftoken_id: string;
-  seller: number; // User ID
-  seller_username: string;
-  amount: string; // en drops
-  destination: string | null;
-  offer_index: string;
-  created_at: string;
-  status: string; // 'active', 'accepted', 'canceled'
 }
 
 const Trade = () => {
