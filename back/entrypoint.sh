@@ -13,4 +13,4 @@ if not User.objects.filter(username='$DJANGO_SUPERUSER_USERNAME').exists():
 EOF
 
 # Lancer le serveur Django
-python manage.py runserver 0.0.0.0:8000
+exec gunicorn backend.wsgi:application --bind 0.0.0.0:${PORT:-8000}
