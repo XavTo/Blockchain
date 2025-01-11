@@ -19,6 +19,10 @@ from decouple import config
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+XRPL_TESTNET_URL = 'https://s.altnet.rippletest.net:51234/'
+XRPL_MASTER_WALLET_ADDRESS = 'rKuuTaqwhNTfwYSJN4knzbfWWpAqPeb15F'
+XRPL_MASTER_WALLET_SECRET = 'sEd7TG7rf8kG2UdQY7JN5gJnSSR5oqS'
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/

@@ -68,6 +68,7 @@ function parseXrplNfts(xrplData: any): Asset[] {
 const DashboardContent = () => {
   const { data: session } = useSession();
   const [wallet, setWallet] = useState<WalletInfo | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
   const [walletError, setWalletError] = useState<string | null>(null);
@@ -84,6 +85,8 @@ const DashboardContent = () => {
             data.error || "Erreur lors de la récupération du portefeuille."
           );
         } else {
+          console.log("Wallet data:", data);
+          setToken(data.tokens);
           setWallet(data);
         }
       } catch (error) {
@@ -191,6 +194,9 @@ const DashboardContent = () => {
                 <p>
                   <span className="font-semibold">Clé Publique :</span>{" "}
                   {wallet.public_key}
+                </p>
+                <p className="mt-1">
+                  <span className="font-semibold">XRP :</span> {token}
                 </p>
               </div>
             ) : (

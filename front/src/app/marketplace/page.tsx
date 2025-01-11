@@ -12,18 +12,18 @@ const Marketplace = () => {
   const [images, setImages] = useState<{
     [key: string]: { uri: string; name: string; description: string };
   }>({});
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(true); // Si nécessaire pour le chargement initial
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string>("");
   const [loadingOffers, setLoadingOffers] = useState<{
     [key: string]: boolean;
   }>({});
 
-  // Retrieve the current user's username and XRPL address
+  // Récupère le nom d'utilisateur actuel et l'adresse XRPL
   const currentUserName = session?.user?.username || "";
   const currentUserAddress = session?.user?.address || "";
 
-  // Function to fetch all sell offers
+  // Fonction pour récupérer toutes les offres de vente
   const fetchSellOffers = async () => {
     setLoading(true);
     setError(null);
@@ -45,13 +45,13 @@ const Marketplace = () => {
         return;
       }
 
-      // Extract NFT token IDs and sellers
+      // Extraire les ID des tokens NFT et les vendeurs
       const nftokenIds = data.sell_offers.map(
         (offer: SellOffer) => offer.nftoken_id
       );
       const sellers = data.sell_offers.map((offer: SellOffer) => offer.seller);
 
-      // Fetch NFT images, names, and descriptions
+      // Récupérer les détails des NFT (images, noms, descriptions)
       await fetchNFTDetails(nftokenIds, sellers);
     } catch (err) {
       console.error("Erreur lors de la récupération des offres:", err);
@@ -61,7 +61,7 @@ const Marketplace = () => {
     }
   };
 
-  // Function to fetch NFT details (images, names, descriptions)
+  // Fonction pour récupérer les détails des NFT
   const fetchNFTDetails = async (nftokenIds: string[], sellers: number[]) => {
     try {
       const res = await fetch("/api/get_nfts/", {
@@ -76,7 +76,7 @@ const Marketplace = () => {
         return;
       }
 
-      // Update images state with URI, name, and description
+      // Mettre à jour l'état des images avec URI, nom et description
       const nftDetails = data.nfts.reduce(
         (
           acc: {
@@ -108,7 +108,7 @@ const Marketplace = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
 
-  // Function to handle accepting an offer
+  // Fonction pour accepter une offre
   const handleAcceptOffer = async (offerIndex: string) => {
     if (!offerIndex) return;
     setLoadingOffers((prev) => ({ ...prev, [offerIndex]: true }));
@@ -128,7 +128,7 @@ const Marketplace = () => {
         setError(data.error || "Erreur lors de l'acceptation de l'offre.");
       } else {
         setMessage("Offre acceptée avec succès !");
-        // Remove the accepted offer from the state
+        // Supprimer l'offre acceptée de l'état
         setSellOffers((prevOffers) =>
           prevOffers.filter((offer) => offer.offer_index !== offerIndex)
         );
@@ -141,10 +141,10 @@ const Marketplace = () => {
     }
   };
 
-  // Function to handle canceling an offer
+  // Fonction pour annuler une offre
   const handleCancelOffer = async (offerIndex: string) => {
     if (!offerIndex) return;
-    setLoading(true);
+    setLoadingOffers((prev) => ({ ...prev, [offerIndex]: true }));
     setError(null);
     setMessage("");
 
@@ -161,7 +161,7 @@ const Marketplace = () => {
         setError(data.error || "Erreur lors de l'annulation de l'offre.");
       } else {
         setMessage("Offre annulée avec succès !");
-        // Remove the canceled offer from the state
+        // Supprimer l'offre annulée de l'état
         setSellOffers((prevOffers) =>
           prevOffers.filter((offer) => offer.offer_index !== offerIndex)
         );
@@ -170,17 +170,17 @@ const Marketplace = () => {
       console.error("Erreur lors de l'annulation de l'offre:", err);
       setError("Erreur lors de l'annulation de l'offre.");
     } finally {
-      setLoading(false);
+      setLoadingOffers((prev) => ({ ...prev, [offerIndex]: false }));
     }
   };
 
-  // Function to format drops into XRP
+  // Fonction pour formater les drops en XRP
   const formatDrops = (drops: string) => {
     const xrp = parseInt(drops, 10) / 1_000_000;
     return `${xrp} XRP`;
   };
 
-  // Function to truncate long text for better UI
+  // Fonction pour tronquer le texte
   const truncateText = (text: string, maxLength: number) => {
     if (text.length <= maxLength) {
       return text;
@@ -190,14 +190,14 @@ const Marketplace = () => {
     return `${start}...${end}`;
   };
 
-  // Filter A: My Active Offers (Seller OR Destination)
+  // Filtre A : Mes Offres Actives (Vendeur OU Destination)
   const myActiveOffers = sellOffers.filter((offer) => {
     const isMeSeller = offer.seller_username === currentUserName;
     const isMeDestination = offer.destination === currentUserAddress;
     return (isMeSeller || isMeDestination) && offer.status === "active";
   });
 
-  // Filter B: All Active Offers Except Mine
+  // Filtre B : Toutes les Offres Actives sauf les miennes
   const otherActiveOffers = sellOffers.filter((offer) => {
     const isMeSeller = offer.seller_username === currentUserName;
     const isMeDestination = offer.destination === currentUserAddress;
@@ -206,7 +206,7 @@ const Marketplace = () => {
 
   return (
     <div className="relative flex flex-col items-center justify-center w-full h-full bg-gray-100 dark:bg-gray-900">
-      {loading && <Loader />} {/* Display Loader if loading */}
+      {loading && <Loader />} {/* Affiche le Loader si en chargement initial */}
       <div className="max-w-6xl w-full px-4 py-8 mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-4xl font-extrabold text-gray-800 dark:text-gray-200">
@@ -217,7 +217,7 @@ const Marketplace = () => {
         {message && <p className="text-green-500 mb-3">{message}</p>}
         {error && <p className="text-red-500 mb-3">{error}</p>}
 
-        {/* My Sell Offers */}
+        {/* Mes Offres de Vente */}
         <div className="mb-12">
           <h2 className="text-3xl font-semibold text-gray-800 dark:text-gray-200 mb-6">
             Mes Offres de Vente
@@ -233,7 +233,7 @@ const Marketplace = () => {
                   key={offer.id}
                   className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl hover:shadow-2xl transition-shadow duration-300"
                 >
-                  {/* Display NFT Image */}
+                  {/* Afficher l'image du NFT */}
                   {images[offer.nftoken_id]?.uri ? (
                     <img
                       src={images[offer.nftoken_id].uri}
@@ -248,14 +248,14 @@ const Marketplace = () => {
                     </div>
                   )}
 
-                  {/* NFT Name */}
+                  {/* Nom du NFT */}
                   {images[offer.nftoken_id]?.name && (
                     <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-2">
                       {truncateText(images[offer.nftoken_id].name, 30)}
                     </h3>
                   )}
 
-                  {/* NFT Description */}
+                  {/* Description du NFT */}
                   {images[offer.nftoken_id]?.description && (
                     <p className="text-gray-600 dark:text-gray-400 mb-4">
                       {truncateText(images[offer.nftoken_id].description, 100)}
@@ -288,7 +288,7 @@ const Marketplace = () => {
                       } text-white px-4 py-2 rounded transition-colors flex items-center justify-center`}
                     >
                       {loadingOffers[offer.offer_index] ? (
-                        <Loader /> // Utilisez le composant Loader ici
+                        <Loader /> // Affiche le Loader pendant l'acceptation
                       ) : (
                         "Accepter"
                       )}
@@ -296,9 +296,18 @@ const Marketplace = () => {
 
                     <button
                       onClick={() => handleCancelOffer(offer.offer_index)}
-                      className="flex-1 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors"
+                      disabled={loadingOffers[offer.offer_index]}
+                      className={`flex-1 ${
+                        loadingOffers[offer.offer_index]
+                          ? "bg-gray-400 cursor-not-allowed"
+                          : "bg-red-600 hover:bg-red-700"
+                      } text-white px-4 py-2 rounded transition-colors flex items-center justify-center`}
                     >
-                      Annuler
+                      {loadingOffers[offer.offer_index] ? (
+                        <Loader /> // Affiche le Loader pendant l'annulation
+                      ) : (
+                        "Annuler"
+                      )}
                     </button>
                   </div>
                 </div>
@@ -307,7 +316,7 @@ const Marketplace = () => {
           )}
         </div>
 
-        {/* All Sell Offers */}
+        {/* Toutes les Offres de Vente */}
         <div>
           <h2 className="text-3xl font-semibold text-gray-800 dark:text-gray-200 mb-6">
             Toutes les Offres de Vente
@@ -323,7 +332,7 @@ const Marketplace = () => {
                   key={offer.id}
                   className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl hover:shadow-2xl transition-shadow duration-300"
                 >
-                  {/* Display NFT Image */}
+                  {/* Afficher l'image du NFT */}
                   {images[offer.nftoken_id]?.uri ? (
                     <img
                       src={images[offer.nftoken_id].uri}
@@ -338,14 +347,14 @@ const Marketplace = () => {
                     </div>
                   )}
 
-                  {/* NFT Name */}
+                  {/* Nom du NFT */}
                   {images[offer.nftoken_id]?.name && (
                     <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-2">
                       {truncateText(images[offer.nftoken_id].name, 30)}
                     </h3>
                   )}
 
-                  {/* NFT Description */}
+                  {/* Description du NFT */}
                   {images[offer.nftoken_id]?.description && (
                     <p className="text-gray-600 dark:text-gray-400 mb-4">
                       {truncateText(images[offer.nftoken_id].description, 100)}
@@ -365,16 +374,24 @@ const Marketplace = () => {
                   )}
                   <button
                     onClick={() => handleAcceptOffer(offer.offer_index)}
-                    disabled={offer.seller_username === currentUserName}
+                    disabled={
+                      loadingOffers[offer.offer_index] ||
+                      offer.seller_username === currentUserName
+                    }
                     className={`mt-2 w-full ${
+                      loadingOffers[offer.offer_index] ||
                       offer.seller_username === currentUserName
                         ? "bg-gray-400 cursor-not-allowed"
                         : "bg-blue-600 hover:bg-blue-700"
                     } text-white px-4 py-2 rounded transition-colors flex items-center justify-center`}
                   >
-                    {offer.seller_username === currentUserName
-                      ? "Votre offre"
-                      : "Accepter l'Offre"}
+                    {loadingOffers[offer.offer_index] ? (
+                      <Loader /> // Affiche le Loader pendant l'acceptation
+                    ) : offer.seller_username === currentUserName ? (
+                      "Votre offre"
+                    ) : (
+                      "Accepter l'Offre"
+                    )}
                   </button>
                 </div>
               ))}

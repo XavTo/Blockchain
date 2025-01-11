@@ -24,9 +24,11 @@ from .xrpl_ops import (
     list_sell_offers_for_user as xrpl_list_sell_offers_for_user,
     list_all_sell_offers as xrpl_list_all_sell_offers
 )
-from .xrpl_ops import wallet_from_user, parseXrplNfts
+from .xrpl_ops import wallet_from_user, parseXrplNfts, get_balance
 import logging
-from typing import List
+from .xrpl_ops import create_new_wallet, fund_wallet
+from xrpl.clients import JsonRpcClient
+from django.conf import settings
 
 
 class AssetViewSet(viewsets.ModelViewSet):
@@ -53,6 +55,8 @@ def logout(request):
     auth.logout(request)
     return Response(status=200)
 
+import requests
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register(request):
@@ -62,10 +66,32 @@ def register(request):
 
         # Créer le wallet
         wallet = create_new_wallet()
-        db_wallet = Wallet(address=wallet.address, public_key=wallet.public_key,
-                           private_key=wallet.private_key, user=user)
+        db_wallet = Wallet(
+            address=wallet.address,
+            public_key=wallet.public_key,
+            private_key=wallet.private_key,
+            user=user
+        )
         db_wallet.save()
 
+        # Alimenter le wallet via le wallet maître
+        try:
+            client = JsonRpcClient(settings.XRPL_TESTNET_URL)
+
+            initial_fund_amount = 2  # 2 XRP
+
+            # Envoyer les fonds
+            result = fund_wallet(
+                master_wallet_secret=settings.XRPL_MASTER_WALLET_SECRET,
+                destination_address=wallet.address,
+                amount_xrp=initial_fund_amount,
+                client=client
+            )
+        except Exception as e:
+            logging.error(f"Erreur lors du financement du wallet : {e}")
+            return Response({"error": "Impossible de financer le wallet."}, status=500)
+
+        # Créer un JWT pour l'utilisateur
         token = AccessToken.for_user(user)
         return Response({
             "id": user.id,
@@ -74,7 +100,9 @@ def register(request):
             "address": db_wallet.address,
             "public_key": db_wallet.public_key,
         }, status=201)
+
     return Response(serializer.errors, status=400)
+
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -144,13 +172,19 @@ def get_wallet_info(request):
     user = request.user
     try:
         db_wallet = Wallet.objects.get(user=user)
+        balance_in_drops = get_balance(db_wallet.address)
+        balance_in_xrp = balance_in_drops / 1_000_000
+
         wallet_data = {
             "address": db_wallet.address,
             "public_key": db_wallet.public_key,
+            "tokens": balance_in_xrp 
         }
         return Response(wallet_data, status=status.HTTP_200_OK)
     except Wallet.DoesNotExist:
         return Response({"error": "Portefeuille non trouvé."}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"error": f"Erreur lors de la récupération des informations du portefeuille: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['POST'])

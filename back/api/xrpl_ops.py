@@ -4,12 +4,104 @@ import logging
 from .serializers import SellOfferSerializer
 from .models import SellOffer, User, Wallet
 import json
-from xrpl.models.transactions import NFTokenAcceptOffer
+from xrpl.wallet import Wallet
+from xrpl.clients import JsonRpcClient
 from xrpl.transaction import submit_and_wait
+from xrpl.models.transactions import Payment
+from xrpl.utils import xrp_to_drops
+from xrpl.wallet import Wallet
+from xrpl.models.requests import AccountInfo
+from xrpl.models.requests import NFTSellOffers
 
 logger = logging.getLogger(__name__)
 
 testnet_url = "https://s.altnet.rippletest.net:51234/"
+
+
+def fund_wallet(master_wallet_secret: str, destination_address: str, amount_xrp: float, client: JsonRpcClient):
+    """
+    Envoie des XRP du wallet maître vers le wallet de destination.
+
+    :param master_wallet_secret: Secret du wallet maître.
+    :param destination_address: Adresse du wallet destinataire.
+    :param amount_xrp: Montant en XRP à envoyer.
+    :param client: Instance de JsonRpcClient connectée au Testnet.
+    :return: Résultat de la transaction XRPL.
+    """
+    try:
+        # Créer le wallet maître
+        master_wallet = Wallet.from_seed(master_wallet_secret)
+        
+        # Créer la transaction de paiement
+        payment = Payment(
+            account=master_wallet.classic_address,
+            amount=str(xrp_to_drops(amount_xrp)),
+            destination=destination_address
+        )
+        
+        # Soumettre la transaction et attendre la validation
+        response = submit_and_wait(payment, client, master_wallet)
+        
+        # Vérifier le statut de la transaction
+        if response.status == "success":
+            return response.result  # Retourner directement le résultat
+        else:
+            raise Exception(f"Transaction échouée : {response.result.get('engine_result_message', 'Erreur inconnue')}")
+    except Exception as e:
+        raise Exception(f"Erreur lors de l'envoi des fonds : {e}")
+
+    
+def get_balance(address: str) -> int:
+    """
+    Récupère le solde en drops d'un compte.
+
+    :param address: Adresse du compte XRPL.
+    :return: Solde en drops.
+    """
+    try:
+        # Initialiser le client
+        client = JsonRpcClient(testnet_url)
+        
+        # Construire la requête AccountInfo
+        account_info_request = AccountInfo(
+            account=address,
+            ledger_index="validated",
+            strict=True
+        )
+        
+        # Effectuer la requête
+        response = client.request(account_info_request)
+        
+        # Vérifier le succès de la requête
+        if response.status == "success":
+            balance = int(response.result['account_data']['Balance'])
+            return balance
+        else:
+            raise Exception(f"Échec de la récupération du solde : {response.result}")
+    except Exception as e:
+        raise Exception(f"Erreur lors de la récupération du solde : {e}")
+    
+def xrp_to_drops(xrp: float) -> int:
+    return int(xrp * 1_000_000)
+
+def get_sell_offer_details(offer_index: str) -> dict:
+    """
+    Récupère les détails d'une offre de vente (NFTokenSellOffer) à partir de la blockchain.
+    """
+    client = xrpl.clients.JsonRpcClient(testnet_url)
+
+    request = NFTSellOffers(nft_id=offer_index)
+    response = client.request(request)
+
+    if response.status == "success":
+        offers = response.result.get("offers", [])
+
+        for offer in offers:
+            return offer  # on suppose qu'il n'y a qu'une seule offre
+    else:
+        raise Exception(f"Impossible de récupérer l'offre : {response.result}")
+
+    return {}
 
 def create_new_wallet() -> xrpl.wallet.Wallet:
     client = xrpl.clients.JsonRpcClient(testnet_url)
@@ -120,31 +212,46 @@ def create_sell_offer(wallet: xrpl.wallet.Wallet, nftoken_id: str, amount: str, 
 def accept_sell_offer(wallet: xrpl.wallet.Wallet, offer_index: str) -> dict:
     """
     Accepte une offre de vente NFT sur XRPL.
+    Vérifie d'abord que l'acheteur dispose des fonds nécessaires.
     """
     try:
         client = xrpl.clients.JsonRpcClient(testnet_url)
+        offer_details = get_sell_offer_details(offer_index)
+        required_drops = int(offer_details.get("amount", 0))
+
+        if required_drops == 0:
+            raise Exception("Impossible de déterminer le prix de l'offre.")
+
+        buyer_balance_drops = get_balance(wallet.classic_address)
+
+        # 3. Ajouter une marge pour les frais éventuels
+        # Sur XRPL, chaque transaction coûte un "transaction fee" minime
+        # (environ 10 drops à 500 drops selon la congestion)
+        # On peut donc prévoir un petit buffer, par exemple 1000 drops
+        fee_buffer = 1000  
         
-        # Construction de la transaction NFTokenAcceptOffer
+        if buyer_balance_drops < (required_drops + fee_buffer):
+            raise Exception("Fonds insuffisants pour accepter cette offre.")
+
         accept_offer_txn = xrpl.models.transactions.NFTokenAcceptOffer(
             account=wallet.classic_address,
-            nftoken_sell_offer=offer_index,  # Remplacement par le champ correct
+            nftoken_sell_offer=offer_index,  # l'ID de l'offre
         )
 
-        # Soumission et attente du résultat
         response = xrpl.transaction.submit_and_wait(
             accept_offer_txn,
             client,
             wallet,
         )
         
-        # Vérification du succès
         if not response.is_successful():
             raise Exception(f"Transaction échouée : {response.result.get('engine_result_message', 'Erreur inconnue')}")
-        
+
         return response.result
 
     except Exception as e:
         raise Exception(f"Erreur lors de l'acceptation de l'offre : {str(e)}")
+
 
 def cancel_sell_offer(wallet: xrpl.wallet.Wallet, offer_index: str) -> dict:
     """
