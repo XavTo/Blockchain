@@ -11,7 +11,7 @@ const HomePage = () => {
   return (
     <div className="flex flex-col justify-center items-center text-center flex-1 px-4">
       <h1 className="text-4xl font-bold text-gray-800 dark:text-gray-200 mb-4">
-        Bienvenue sur TokenAsset
+        Bienvenue sur NFTCoin
       </h1>
       <p className="text-lg text-gray-600 dark:text-gray-400 mb-6 max-w-2xl">
         Tokenisez, gérez et échangez vos pièces de monnaie en toute sécurité sur

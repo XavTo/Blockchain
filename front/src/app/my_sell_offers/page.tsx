@@ -192,7 +192,7 @@ const MySellOffers = () => {
   };
 
   return (
-    <div className="relative flex flex-col items-center w-full flex-1 bg-gray-100 dark:bg-gray-900 min-h-screen">
+    <div className="relative flex flex-col items-center justify-center w-full h-full bg-gray-100 dark:bg-gray-900">
       {loading && <Loader />} {/* Display Loader if loading */}
       <div className="max-w-6xl w-full px-4 py-8 mx-auto">
         <div className="flex justify-between items-center mb-6">
