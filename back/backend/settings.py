@@ -60,6 +60,7 @@ MIDDLEWARE = [
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
+    "https://blockchain-chi-ashen.vercel.app",
     # Ajoutez d'autres origines si nécessaire
 ]
 
