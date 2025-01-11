@@ -149,82 +149,93 @@ const DashboardContent = () => {
   };
 
   return (
-    <div className="relative flex flex-col items-center justify-center w-full h-full">
+    <div className="relative flex flex-col items-center justify-center w-full h-full bg-gray-100 dark:bg-gray-900">
       {loading && <Loader />} {/* Afficher le Loader si loading */}
-      <div className="max-w-6xl w-full px-4">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200">
+      <div className="max-w-6xl w-full px-4 py-8">
+        {/* Titre principal */}
+        <div className="mb-8 text-center">
+          <h1 className="text-4xl font-bold text-gray-800 dark:text-gray-200">
             Tableau de Bord
-          </h2>
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            Gérez vos actifs et consultez les informations de votre
+            portefeuille.
+          </p>
         </div>
 
         {/* Bouton pour ouvrir la modal */}
-        <div className="mb-4">
+        <div className="mb-6 flex justify-center">
           <button
             onClick={() => setIsModalOpen(true)}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600
-                     dark:bg-blue-600 dark:hover:bg-blue-700 transition-colors duration-200"
+            className="px-6 py-3 bg-blue-500 text-white font-semibold text-lg rounded-lg shadow-md hover:bg-blue-600
+                  dark:bg-blue-600 dark:hover:bg-blue-700 transition-colors duration-200"
           >
             Créer un nouvel Asset (NFT)
           </button>
         </div>
 
         {/* Infos du Portefeuille */}
-        <div className="mb-8">
-          <h3 className="text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-4">
+        <div className="mb-4">
+          <h3 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-2">
             Informations du Portefeuille
           </h3>
-          {walletError ? (
-            <p className="text-red-500">{walletError}</p>
-          ) : wallet ? (
-            <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
-              <p>
-                <span className="font-semibold">Adresse :</span>{" "}
-                {wallet.address}
-              </p>
-              <p>
-                <span className="font-semibold">Clé Publique :</span>{" "}
-                {wallet.public_key}
-              </p>
-            </div>
-          ) : (
-            <p>Aucune information de portefeuille disponible.</p>
-          )}
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg">
+            {walletError ? (
+              <p className="text-red-500">{walletError}</p>
+            ) : wallet ? (
+              <div>
+                <p className="mb-2">
+                  <span className="font-semibold">Adresse :</span>{" "}
+                  {wallet.address}
+                </p>
+                <p>
+                  <span className="font-semibold">Clé Publique :</span>{" "}
+                  {wallet.public_key}
+                </p>
+              </div>
+            ) : (
+              <p>Aucune information de portefeuille disponible.</p>
+            )}
+          </div>
         </div>
 
         {/* Liste des Actifs (NFT) */}
         <div>
-          <h3 className="text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-4">
+          <h3 className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-2">
             Vos Actifs
           </h3>
-          {assetsError ? (
-            <p className="text-red-500">{assetsError}</p>
-          ) : assets.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-              {assets.map((asset) => (
-                <div
-                  key={asset.id}
-                  className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg shadow"
-                >
-                  <h4 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
-                    {asset.name}
-                  </h4>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    {asset.description || "Pas de description."}
-                  </p>
-                  {asset.URI && (
-                    <img
-                      src={asset.URI}
-                      alt={asset.name}
-                      className="mt-2 w-full h-48 object-cover rounded"
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p>Aucun actif trouvé.</p>
-          )}
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
+            {assetsError ? (
+              <p className="text-red-500">{assetsError}</p>
+            ) : assets.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {assets.map((asset) => (
+                  <div
+                    key={asset.id}
+                    className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+                  >
+                    <h4 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                      {asset.name}
+                    </h4>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      {asset.description || "Pas de description."}
+                    </p>
+                    {asset.URI && (
+                      <img
+                        src={asset.URI}
+                        alt={asset.name}
+                        className="mt-4 w-full h-48 object-cover rounded-md"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-600 dark:text-gray-400">
+                Aucun actif trouvé.
+              </p>
+            )}
+          </div>
         </div>
       </div>
       <CreateAssetModal
